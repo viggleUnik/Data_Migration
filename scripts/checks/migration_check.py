@@ -1,0 +1,1 @@
+# Check script for Oracle to Postgres migration

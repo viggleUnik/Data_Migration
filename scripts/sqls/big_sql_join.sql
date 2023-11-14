@@ -1,0 +1,1 @@
+-- A query to return data from joins of: CUSTOMERS,ORDERS, ORDER_ITEMS, PRODUCTS and PRODUCT_CATEGORIES
