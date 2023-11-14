@@ -2,3 +2,5 @@
 /considerations
 /venv
 /output
+.vscode
+/scripts/__pycache__
