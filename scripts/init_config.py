@@ -4,7 +4,6 @@ from pickle import NONE
 
 class config:
 
-    FOLDER_OUTPUT_LOGS = 'output/logs'
     FOLDER_OUTPUT = 'output'
     FOLDER_CONFIG = 'config'
     FOLDER_CSV = 'csv'
@@ -13,7 +12,7 @@ class config:
     DIR_CONFIG = None
     DIR_OUTPUT = None
     DIR_CSV = None
-    DIR_LOGS = None
+    DIR_LOGS = 'c:\\Users\\crvicol\\WorkAndStudy\\Python_Workspace\\epic_8\\output\\logs'
 
     # Logging
     LOGS_LEVEL = 'info'
@@ -51,7 +50,7 @@ class config:
     @staticmethod
     def setup_logging(logs : str):
         
-        if logs != 'info' is not None:
+        if logs != 'info':
             config.LOGS_LEVEL = logs
 
         config.FILE_LOGS = f"{config.DIR_LOGS}/logs.log"
@@ -66,7 +65,6 @@ class config:
             handlers=[logging.FileHandler(config.FILE_LOGS), logging.StreamHandler()],
             level=logs_level,
         )
-
 
         # set all existing loggers to level=LOGS_LEVEL
         loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
