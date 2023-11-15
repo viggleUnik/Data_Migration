@@ -4,3 +4,7 @@
 /output
 .vscode
 /scripts/__pycache__
+/notebook
+/scripts/utils/__pycache__
+/test/__pycache__
+/.idea
