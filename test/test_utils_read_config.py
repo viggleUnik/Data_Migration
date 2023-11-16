@@ -19,10 +19,10 @@ class test_utils_read_config(unittest.TestCase):
     def test_oracle_params(self):
 
         params = {
-            'ORC_USER' : 'testgenadmin',
-            'ORC_PASS' : 'testgenadmin',
-            'ORC_HOST' : 'oracle5.end',
-            'ORC_PORT' : '1521'
+            'USER' : 'testgenadmin',
+            'PASS' : 'testgenadmin',
+            'HOST' : 'oracle5.end',
+            'PORT' : '1521'
         }
 
         self.assertEqual(params, read_config(section='ORACLE'))

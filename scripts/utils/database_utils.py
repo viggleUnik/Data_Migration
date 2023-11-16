@@ -3,7 +3,7 @@ import logging
 import os
 
 from sshtunnel import SSHTunnelForwarder
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, exc, text
 from sqlalchemy.orm import sessionmaker
 
 from scripts.utils.file_utils import read_config
@@ -12,68 +12,56 @@ from scripts.init_config import config
 config.setup_logging('error')
 log = logging.getLogger(os.path.basename(__file__))
 
-def create_oracle_connection():
+def get_ssh_tunnel(service: str) -> SSHTunnelForwarder:
 
-    #get ssh and oracle params
+    #get ssh params
     ssh_params = read_config(section='SSH')
-    oracle_params = read_config(section='ORACLE')
+
+    # get service params
+    service_params = read_config(section=service)
 
     # assign params
-    # SSH
     ssh_host = ssh_params['SSH_HOST']
     ssh_user = ssh_params['SSH_USER']
     private_key = ssh_params['PRIVATE_KEY']
     ssh_port = int(ssh_params['SSH_PORT'])
-    local_port = ssh_params['LOCAL_PORT']
+    bind_host = service_params['HOST']
+    bind_port = int(service_params['PORT'])
 
-    # ORACLE
-    orc_user = oracle_params['ORC_USER']
-    orc_password = oracle_params['ORC_PASS']
-    orc_host = oracle_params['ORC_HOST']
-    orc_port = int(oracle_params['ORC_PORT'])
+    # create tunnel
 
     # Create an SSHTunnelForwarder object
     tunnel = SSHTunnelForwarder(
         (ssh_host, ssh_port),
         ssh_username=ssh_user,
         ssh_pkey=private_key,
-        remote_bind_address=(orc_host, orc_port)
+        remote_bind_address=(bind_host, bind_port)
     )
+    return tunnel
 
-    try:
-        tunnel.start()
-        local_port = str(tunnel.local_bind_port)
+def create_session(db: str, local_port: str):
 
-        DIALECT = 'oracle'
-        SQL_DRIVER = 'cx_oracle'
-        SERVICE = 'testgen'
-        ENGINE_PATH_WIN_AUTH = DIALECT + '+' + SQL_DRIVER + '://' + orc_user + ':' + orc_password + '@' + '127.0.0.1' + ':' + local_port + '/?service_name=' + SERVICE
+    engine_path_auth = ''
+    # create engine string with specific service
+    if db == 'ORACLE':
+        db_params = read_config(db)
+        driver = db_params['DRIVER']
+        user = db_params['USER']
+        _pass = db_params['PASS']
+        service = db_params['SERVICE']
+        engine_path_auth = f"oracle+{driver}://{user}:{db_params['PASS']}@127.0.0.1:{local_port}/?service_name={service}"
 
+    elif db == 'POSTGRE':
+        db_params = read_config(db)
+        user = db_params['USER']
+        _pass = db_params['PASS']
+        service = db_params['SERVICE']
+        engine_path_auth = f'postgresql://{user}:{_pass}@127.0.0.1:{local_port}/{service}'
 
-        engine = create_engine(ENGINE_PATH_WIN_AUTH)
+    # create engine and session
+    engine = create_engine(engine_path_auth)
+    _session_obj = sessionmaker(bind=engine)
+    _session = _session_obj()
 
-        Session1 = sessionmaker(bind=engine)
-        session = Session1()
-        test = session.execute("select * from user_tables")
+    return _session
 
-        for row in test:
-            print(row)
-
-        session.close()
-
-    except Exception as e:
-        log.info(f'Error starting the tunnel: {e}')
-    finally:
-        tunnel.stop()
-
-
-def get_oracle_connection(credentials):
-    connection_str = f"oracle+cx_oracle://{credentials['oracle_username']}:{credentials['oracle_password']}@127.0.0.1:{credentials['local_port']}/?service_name=orclpdb"
-    engine = create_engine(connection_str)
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    return session
-
-
-if __name__ == '__main__':
-    create_oracle_connection()
