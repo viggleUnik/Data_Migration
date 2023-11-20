@@ -108,7 +108,6 @@ class test_database_utils(unittest.TestCase):
     def test_with_connection(self):
         conn = None
         tunnel = None
-
         try:
             tunnel = get_ssh_tunnel(service='ORACLE')
             tunnel.start()
@@ -119,23 +118,23 @@ class test_database_utils(unittest.TestCase):
 
             engine = create_engine(engine_path_auth)
 
-            """with engine.connect() as conn:
+            with engine.connect() as conn:
                 result = conn.execute(text('SELECT * FROM regions'))
                 for row in result:
-                    print(row)"""
+                    print(row)
+
+            conn.close()
             # Connect to the database
-            conn = engine.connect()
+            #conn = engine.connect()
 
             # Execute the query
-            result = conn.execute(text('SELECT * FROM regions'))
+            #result = conn.execute(text('SELECT * FROM regions'))
 
             # Fetch and print the results
-            for row in result:
-                print(row)
-
+            #for row in result:
+             #   print(row)
 
         except Exception as e:
             print(f"Error: {e}")
         finally:
-            conn.close()
             tunnel.close()

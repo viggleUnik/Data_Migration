@@ -9,26 +9,22 @@ from scripts.init_config import config
 config.setup_logging(logs='info')
 log = logging.getLogger(os.path.basename(__file__))
 
-def gen_data_fake_regions(nr_recs: int):
+def gen_data_fake_regions(nr_recs: int, id_start: int = 1 ):
 
     fake = Faker()
-    data_list = []
 
     # Initialize the DataFrame with the columns
     df = pd.DataFrame(columns=['region_name'])
 
-    for i in range(1, nr_recs):
-        data = {}  # Create a new dictionary in each iteration
-        data['region_name'] = f'r_{fake.unique.word()}'
-        data_list.append(data)
+    for i in range(nr_recs):
 
-        df.loc[i] = [ f'r_{fake.unique.word()}']
-
-    df = pd.DataFrame(data_list)
-    return df, data_list
+        df.loc[i] = [
+                f'r_{fake.unique.word()}'
+        ]
+    return df
 
 
-def gen_data_fake_countries(nr_recs: int, nr_of_regions: int):
+def gen_data_fake_countries(nr_recs: int, nr_of_regions: list[int]):
 
     fake = Faker('en_US')
 
@@ -43,9 +39,11 @@ def gen_data_fake_countries(nr_recs: int, nr_of_regions: int):
     generated_country_codes = set()
 
     for i in range(1, nr_recs):
-        # Select a random country
+
+        # Select a random country and region
         country = fake.random_element(elements=pycountry.countries)
         country_code = country.alpha_2
+        region = fake.random_elemenent(elements=nr_of_regions)
 
         # country code is unique
         while country_code in generated_country_codes:
@@ -59,7 +57,7 @@ def gen_data_fake_countries(nr_recs: int, nr_of_regions: int):
         df.loc[i] = {
             'country_id': country_code,
             'country_name': country.name,
-            'region_id': fake.random_int(min=5, max=nr_of_regions+5)
+            'region_id': region
         }
 
     return df
@@ -168,7 +166,7 @@ def gen_data_fake_products(nr_recs: int):
             fake.word(),  # product_name
             fake.text(max_nb_chars=2000),  # description
             fake.random_int(min=1, max=1000),  # standard_cost
-            fake.random_int(min=1001, max=2000),  # list_price
+            fake.random_int(min=1001, max=3000),  # list_price
             fake.random_int(min=6, max=10)  # category_range
         ]
 
@@ -176,6 +174,7 @@ def gen_data_fake_products(nr_recs: int):
 
 
 def gen_data_fake_customers(nr_recs: int):
+
     fake = Faker()
 
     df = pd.DataFrame(columns=[
@@ -228,17 +227,6 @@ if __name__ == '__main__':
 
     print('everything will be fine')
 
-    #df, data_list = gen_data_fake_regions(100)
-    #print(df.head())
-    #print(data_list)
-
-    #countries = gen_data_fake_countries(20, 10 )
-    #print(countries)
-
-    #df = gen_data_fake_employees(10)
-    #print(type(df['hire_date'].iloc[1]))
-    #print(type(df['phone'].iloc[1]))
-    #print(df['hire_date'].iloc[1])
-
-
-    print(gen_data_fake_products(10))
+    df = gen_data_fake_regions(10)
+    for i in range(len(df)):
+        print(df.iloc[i])
