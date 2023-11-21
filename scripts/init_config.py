@@ -18,6 +18,8 @@ class config:
     LOGS_LEVEL = 'info'
     FILE_LOGS = None
 
+    # nr of records
+    MAX = 10
 
     @staticmethod
     def setup(logs_level : str):

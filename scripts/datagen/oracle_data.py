@@ -16,15 +16,9 @@ from scripts.datagen.generate_data import gen_data_fake_regions
 
 
 
-
-"""
-    Before adding records from postgres, need to think about seting autoincremented ids
-    to new value
-"""
-
 class Oracle_Data(Database_Functions):
 
-    CONSTRAINTS_TO_DISABLE = [
+    constraints = [
         ("countries", "fk_countries_regions"),
         ("locations", "fk_locations_countries"),
         ("warehouses", "fk_warehouses_locations"),
@@ -43,7 +37,6 @@ class Oracle_Data(Database_Functions):
         # Call the __init__ method of the superclass
         super().__init__(service)
 
-
     def disable_constraints(self):
 
         tunnel = None
@@ -61,7 +54,7 @@ class Oracle_Data(Database_Functions):
 
             try:
 
-                for table_name, constraint_name in self.CONSTRAINTS_TO_DISABLE:
+                for table_name, constraint_name in self.constraints:
 
                     statement = text(f"ALTER TABLE {table_name} DISABLE CONSTRAINT {constraint_name}")
                     session.execute(statement)
@@ -80,7 +73,6 @@ class Oracle_Data(Database_Functions):
             self.log.error(f'Error setting up database connection: {e}', exc_info=True)
 
         finally:
-            print('aici disable')
             #close session, tunnel
             if (session is not None):
                 session.close()
@@ -107,13 +99,13 @@ class Oracle_Data(Database_Functions):
 
             try:
 
-                for table_name, constraint_name in self.CONSTRAINTS_TO_DISABLE:
+                for table_name, constraint_name in self.constraints:
 
                     statement = text(f"ALTER TABLE {table_name} ENABLE CONSTRAINT {constraint_name}")
                     session.execute(statement)
                     # Add logic to execute the statement (for example, using SQLAlchemy)
                     self.log.info(
-                            f"Enabled constraint '{constraint_name}' for table '{table_name}' in Oracle Data ")
+                            f"Enabled constraint '{constraint_name}' for table '{table_name}' in {self.service} Data ")
 
                 # commit the changes
                 session.commit()
@@ -125,7 +117,7 @@ class Oracle_Data(Database_Functions):
         except Exception as e:
             self.log.error(f'Error setting up database connection: {e}', exc_info=True)
         finally:
-            print('aici enable')
+
             # close session, tunnel
             if (session is not None):
                 session.close()
@@ -134,54 +126,12 @@ class Oracle_Data(Database_Functions):
                 tunnel.stop()
 
     def insert_fake_data_regions(self, nr_recs: int):
+        super().insert_data_fake_regions(nr_recs)
 
 
-        # Initialize tunnel and session to None
-        tunnel = None
-        session = None
 
-        try:
-            # create tunnel
-            tunnel = get_ssh_tunnel(service='ORACLE')
-            tunnel.start()
-            local_port = str(tunnel.local_bind_port)
 
-            session = create_session(db='ORACLE', local_port=local_port)
 
-            try:
-                res = session.execute(text('SELECT MAX(region_id) FROM regions'))
-                max_region_id = res.scalar()
-
-                self.log.info(f'Max Region ID: {max_region_id}')
-
-                if max_region_id is None:
-                    max_region_id = 0
-
-                regions_data = gen_data_fake_regions(nr_recs)
-
-                # Define the SQL query with bind parameters
-                sql_query = text("insert into regions ( region_name) values ( :region_name)")
-
-                for _, row in regions_data.iterrows():
-                    session.execute(sql_query, { "region_name": row["region_name"]})
-
-                # commit the changes
-                session.commit()
-
-            except exc.SQLAlchemyError as e:
-                self.log.error(f'Error executing SQL query: {e}', exc_info=True)
-                session.rollback()  # Rollback changes in case of an error
-
-        except Exception as e:
-            self.log.error(f'Error setting up database connection: {e}', exc_info=True)
-
-        finally:
-
-            if (session is not None):
-                session.close()
-
-            if (tunnel is not None):
-                tunnel.stop()
 
 if __name__ == '__main__':
 
@@ -189,7 +139,9 @@ if __name__ == '__main__':
 
     #orc.enable_constraints()
 
-    orc.disable_constraints()
+    #orc.disable_constraints()
+
+    orc.insert_data_fake_regions(5)
 
  #obj.disable_constraints()
 
