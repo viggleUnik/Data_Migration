@@ -8,3 +8,4 @@
 /scripts/utils/__pycache__
 /test/__pycache__
 /.idea
+scripts/datagen/__pycache__/
