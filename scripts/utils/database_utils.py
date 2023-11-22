@@ -1,7 +1,9 @@
  # Helper functions for database connections
 import logging
 import os
+import pandas as pd
 import cx_Oracle
+from sqlalchemy.exc import StatementError, DBAPIError
 
 from sshtunnel import SSHTunnelForwarder
 from sqlalchemy import create_engine, exc, text
@@ -9,7 +11,6 @@ from sqlalchemy.orm import sessionmaker
 
 from scripts.utils.file_utils import read_config
 from scripts.init_config import config
-
 
 def get_engine_path(db: str, local_port):
 
@@ -70,6 +71,56 @@ def create_session(db: str, local_port: str):
     _session = Session()
 
     return _session
+
+
+def execute_sql_file_to_df(service: str, file: str, order_date: str):
+
+    config.setup_logging(logs='info')
+    log = logging.getLogger(os.path.basename(__file__))
+
+    tunnel = None
+    session = None
+    result_df = None
+
+
+    # Read the SQL script from the file
+    with open(file, 'r') as sql_file:
+        sql_script = sql_file.read()
+
+    # Replace the parameter in the SQL script with the actual order date
+    sql_query = sql_script.replace(':target_order_date', f"'{order_date}'")
+
+    try:
+        # create tunnel
+        tunnel = get_ssh_tunnel(service=service)
+        tunnel.start()
+        local_port = str(tunnel.local_bind_port)
+
+        # create session
+        session = create_session(db=service, local_port=local_port)
+
+        try:
+            # Execute the SQL query and fetch the result into a DataFrame
+            result_df = pd.read_sql_query(sql_query, session.bind)
+
+        except (exc.SQLAlchemyError, StatementError, DBAPIError) as e:
+            log.error(f'Error executing SQL query: {e}', exc_info=True)
+            session.rollback()  # Rollback changes in case of an error
+
+    except Exception as e:
+        log.error(f'Error setting up database {service} connection: {e}', exc_info=True)
+
+    finally:
+        if (session is not None):
+            session.close()
+        if (tunnel is not None):
+            tunnel.stop()
+
+    return result_df
+
+
+
+
 
 
 

@@ -19,7 +19,26 @@ class config:
     FILE_LOGS = None
 
     # nr of records
-    MAX = 10
+    MAX = 30
+
+
+    # params for data generation
+    PARAMS = {
+        'regions' : 100,
+        'countries' : 150,
+        'locations' : 500,
+        'warehouses' : 100,
+        'employees' : 300,
+        'customers' : 600,
+        'contacts' : 500,
+        'product_categories' : 35,
+        'products' : 550,
+        'inventories': 300,
+        'orders' : 300,
+        'order_items': 250
+    }
+
+
 
     @staticmethod
     def setup(logs_level : str):

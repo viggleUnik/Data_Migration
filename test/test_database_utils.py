@@ -124,15 +124,6 @@ class test_database_utils(unittest.TestCase):
                     print(row)
 
             conn.close()
-            # Connect to the database
-            #conn = engine.connect()
-
-            # Execute the query
-            #result = conn.execute(text('SELECT * FROM regions'))
-
-            # Fetch and print the results
-            #for row in result:
-             #   print(row)
 
         except Exception as e:
             print(f"Error: {e}")

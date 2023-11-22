@@ -23,3 +23,24 @@ def read_config(section : str, filename=config_file_path):
     return section_params
 
 
+def save_dataframe_to_csv(dataframe):
+
+    output_directory = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'output/csv')
+
+    csv_file_name = f'{dataframe.columns[1]}.csv'
+
+    os.makedirs(output_directory, exist_ok=True)
+
+    # Construct the full path to the CSV file
+    csv_path = os.path.join(output_directory, csv_file_name)
+
+    # Save the DataFrame to the CSV file
+    dataframe.to_csv(csv_path, index=False)
+
+    print(f"DataFrame saved to {csv_path}")
+
+
+
+
+
+
