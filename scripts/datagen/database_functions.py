@@ -705,7 +705,7 @@ class DatabaseFunctions:
     def delete_data_from_tables(self, table_names: list[str]):
         # Initialize tunnel and session to None
         tunnel = None
-
+        session = None
 
         try:
             # create tunnel
@@ -740,9 +740,3 @@ class DatabaseFunctions:
 
 
 
-
-if __name__ == '__main__':
-    project_directory = os.path.abspath(os.path.dirname(__file__))
-    print(project_directory)
-    file = os.path.dirname(__file__)
-    print(file)

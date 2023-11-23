@@ -4,19 +4,15 @@ from re import S
 import faker
 
 import logging
-from init_config import config
+from scripts.init_config import config
 from scripts.utils.file_utils import read_config
 from scripts.datagen.database_functions import DatabaseFunctions
 from scripts.utils.file_utils import save_dataframe_to_csv
-from scripts.utils.database_utils import execute_sql_file_to_df
+from scripts.utils.database_utils import execute_sql_file_to_df, get_oracle_table_data_to_csv
 
 def run():
-    
     config.setup(logs_level='debug')
-    log = logging.getLogger(os.path.basename(__file__))
 
-    for i in range(10):
-        log.info(f'Runing {os.path.basename(__file__)} looping {i}')
 
 
 def data_generation_run(service: str):
@@ -39,14 +35,25 @@ def data_generation_run(service: str):
     obj.insert_data_fake_inventories(nr_products=config.PARAMS['inventories'])
 
 
+def from_sql_to_csv_saved(service: str, order_date: str):
+
+    config.setup_logging(logs='info')
+    sql_file_path = os.path.join(config.DIR_SQLS, 'big_sql_join.sql')
+    df = execute_sql_file_to_df(service, sql_file_path, order_date)
+    save_dataframe_to_csv(df)
+
+
 
 if __name__ == '__main__':
 
-    df = execute_sql_file_to_df('POSTGRE', './sqls/big_sql_join.sql', '2021-08-09')
+    # set directories
+    config.setup_dirs()
 
-    #project_directory = os.path.abspath(os.path.dirname(__file__))
+    #from_sql_to_csv_saved('POSTGRE', '2021-08-09')
 
-    save_dataframe_to_csv(df)
+    #get_oracle_table_data_to_csv(table_name='order_items')
+
+
 
 
 

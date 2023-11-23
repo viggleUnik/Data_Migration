@@ -2,17 +2,31 @@ import logging
 import os
 from pickle import NONE
 
+class SQLAlchemyFilter(logging.Filter):
+    def filter(self, record):
+        # Check if the log record is from the SQLAlchemy engine
+        if 'sqlalchemy.engine' in record.name:
+            # Include ROLLBACK and COMMIT logs
+            return 'ROLLBACK' in record.getMessage() or 'COMMIT' in record.getMessage()
+        # Exclude all other logs
+        return False
+
 class config:
 
     FOLDER_OUTPUT = 'output'
     FOLDER_CONFIG = 'config'
     FOLDER_CSV = 'csv'
     FOLDER_LOGS = 'logs'
-    
+    FOLDER_SCRIPTS = 'scripts'
+    FOLDER_SQLS = 'sqls'
+    FOLDER_S3_DOWNLOAD = 's3_down'
+
     DIR_CONFIG = None
     DIR_OUTPUT = None
     DIR_CSV = None
     DIR_LOGS = 'c:\\Users\\crvicol\\WorkAndStudy\\Python_Workspace\\epic_8\\output\\logs'
+    DIR_SQLS = None
+    DIR_S3_DOWNLOAD = None
 
     # Logging
     LOGS_LEVEL = 'info'
@@ -56,17 +70,23 @@ class config:
             config.DIR_OUTPUT = os.path.join(os.getcwd(), config.FOLDER_OUTPUT)
         
         if config.DIR_CSV is None:
-            config.DIR_CSV = os.path.join(config.FOLDER_OUTPUT, config.FOLDER_CSV )
+            config.DIR_CSV = os.path.join(os.getcwd(), config.FOLDER_OUTPUT, config.FOLDER_CSV )
 
         if config.DIR_LOGS is None:
-            config.DIR_LOGS = os.path.join(config.FOLDER_OUTPUT, config.FOLDER_LOGS )
+            config.DIR_LOGS = os.path.join(os.getcwd(), config.FOLDER_OUTPUT, config.FOLDER_LOGS )
+
+        if config.DIR_SQLS is None:
+            config.DIR_SQLS = os.path.join(os.getcwd(), config.FOLDER_SCRIPTS, config.FOLDER_SQLS )
+
+        if config.DIR_S3_DOWNLOAD is None:
+            config.DIR_S3_DOWNLOAD = os.path.join(os.getcwd(), config.FOLDER_OUTPUT, config.FOLDER_S3_DOWNLOAD)
 
         os.makedirs(config.DIR_CONFIG, exist_ok=True)
         os.makedirs(config.DIR_OUTPUT, exist_ok=True)
         os.makedirs(config.DIR_CSV, exist_ok=True)
         os.makedirs(config.DIR_LOGS, exist_ok=True)
-
-
+        os.makedirs(config.DIR_SQLS, exist_ok=True)
+        os.makedirs(config.DIR_S3_DOWNLOAD, exist_ok=True)
 
     @staticmethod
     def setup_logging(logs : str):
@@ -91,4 +111,16 @@ class config:
         loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
         for logger in loggers:
             logger.setLevel(loglevels_dict.get(config.LOGS_LEVEL.lower(), logging.INFO))
+
+
+        # Create a handler with the custom filter for 'sqlalchemy.engine'
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+        handler.addFilter(SQLAlchemyFilter())
+
+        # Add the handler to the 'sqlalchemy.engine' logger
+        log_sqlalchemy_engine = logging.getLogger('sqlalchemy.engine')
+        log_sqlalchemy_engine.addHandler(handler)
+        log_sqlalchemy_engine.setLevel(logging.INFO)
+        log_sqlalchemy_engine.propagate = False
 

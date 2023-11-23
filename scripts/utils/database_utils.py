@@ -1,6 +1,8 @@
  # Helper functions for database connections
 import logging
 import os
+import time
+
 import pandas as pd
 import cx_Oracle
 from sqlalchemy.exc import StatementError, DBAPIError
@@ -57,6 +59,7 @@ def get_ssh_tunnel(service: str) -> SSHTunnelForwarder:
         ssh_pkey=private_key,
         remote_bind_address=(bind_host, bind_port)
     )
+
     return tunnel
 
 
@@ -74,53 +77,99 @@ def create_session(db: str, local_port: str):
 
 
 def execute_sql_file_to_df(service: str, file: str, order_date: str):
+     config.setup_logging(logs='info')
+     log = logging.getLogger(os.path.basename(__file__))
 
-    config.setup_logging(logs='info')
-    log = logging.getLogger(os.path.basename(__file__))
+     tunnel = None
+     session = None
+     result_df = None
 
-    tunnel = None
-    session = None
-    result_df = None
+     # Read the SQL script from the file
+     with open(file, 'r') as sql_file:
+         sql_script = sql_file.read()
+
+     # Replace the parameter in the SQL script with the actual order date
+     sql_query = sql_script.replace(':target_order_date', f"'{order_date}'")
+
+     try:
+         # create tunnel
+         tunnel = get_ssh_tunnel(service=service)
+         tunnel.start()
+         local_port = str(tunnel.local_bind_port)
+
+         # create session
+         session = create_session(db=service, local_port=local_port)
+
+         try:
+             # Execute the SQL query and fetch the result into a DataFrame
+             result_df = pd.read_sql_query(sql_query, session.bind)
+
+         except (exc.SQLAlchemyError, StatementError, DBAPIError) as e:
+             log.error(f'Error executing SQL query: {e}', exc_info=True)
+             session.rollback()  # Rollback changes in case of an error
+
+     except Exception as e:
+         log.error(f'Error setting up database {service} connection: {e}', exc_info=True)
+
+     finally:
+         if (session is not None):
+             session.close()
+         if (tunnel is not None):
+             tunnel.stop()
+
+     return result_df
 
 
-    # Read the SQL script from the file
-    with open(file, 'r') as sql_file:
-        sql_script = sql_file.read()
+def get_oracle_table_data_to_csv( table_name: str):
 
-    # Replace the parameter in the SQL script with the actual order date
-    sql_query = sql_script.replace(':target_order_date', f"'{order_date}'")
-
-    try:
-        # create tunnel
-        tunnel = get_ssh_tunnel(service=service)
-        tunnel.start()
-        local_port = str(tunnel.local_bind_port)
-
-        # create session
-        session = create_session(db=service, local_port=local_port)
+        # Initialize tunnel and session to None
+        tunnel = None
+        session = None
+        log = logging.getLogger(os.path.basename(__file__))
 
         try:
-            # Execute the SQL query and fetch the result into a DataFrame
-            result_df = pd.read_sql_query(sql_query, session.bind)
+            # create tunnel
+            tunnel = get_ssh_tunnel(service='ORACLE')
+            tunnel.start()
+            local_port = str(tunnel.local_bind_port)
 
-        except (exc.SQLAlchemyError, StatementError, DBAPIError) as e:
-            log.error(f'Error executing SQL query: {e}', exc_info=True)
-            session.rollback()  # Rollback changes in case of an error
+            # create session
+            session = create_session(db='ORACLE', local_port=local_port)
 
-    except Exception as e:
-        log.error(f'Error setting up database {service} connection: {e}', exc_info=True)
+            try:
 
-    finally:
-        if (session is not None):
-            session.close()
-        if (tunnel is not None):
-            tunnel.stop()
-
-    return result_df
+                # generate queries for insert
+                _query = f"SELECT * FROM {table_name}"
 
 
+                # save to dataframe
+                result_df = pd.read_sql_query(_query, session.bind)
+
+                # save to local csv file
+                csv_file_path = os.path.join(config.DIR_CSV, f'{table_name}.csv')
+                result_df.to_csv(csv_file_path ,index=False, sep='|')
+
+                log.info(f'Table data: {table_name} saved to {csv_file_path}')
 
 
+            except (exc.SQLAlchemyError, StatementError, DBAPIError) as e:
+                log.error(f'Error executing SQL query: {e}', exc_info=True)
+                session.rollback()  # Rollback changes in case of an error
+
+            finally:
+                if session is not None:
+                    session.close()
+
+        except Exception as e:
+            log.error(f'Error setting up database ORACLE connection: {e}', exc_info=True)
+
+        finally:
+            try:
+                if tunnel is not None:
+                    tunnel.stop()
+                    time.sleep(1)  # Add a short delay before exiting
+            except Exception as e:
+                log.error(f'Error stopping SSH tunnel: {e}', exc_info=True)
 
 
 
