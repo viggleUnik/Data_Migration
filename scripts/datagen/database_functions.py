@@ -20,11 +20,49 @@ class DatabaseFunctions:
         self.service = service
         self.tunnel = get_ssh_tunnel(service=self.service)
 
-    def disable_constraints(self):
-        raise NotImplementedError("Method for disabling constraints")
+    def control_constraints(self, control: str):
 
-    def enable_constraints(self):
-        raise NotImplementedError("Method for enabling constraints")
+        tunnel = None
+        session = None
+
+        try:
+
+            # create tunnel
+            tunnel = self.tunnel
+            tunnel.start()
+            local_port = str(tunnel.local_bind_port)
+
+            # create session
+            session = create_session(db=self.service, local_port=local_port)
+
+            try:
+
+                _queries = []
+
+                if control == 'ENABLE':
+                    _queries = QGen.generate_enable_constraints(service=self.service)
+                elif control == 'DISABLE':
+                    _queries = QGen.generate_disable_constraints(service=self.service)
+
+                for q in _queries:
+                    print(q)
+                    session.execute(text(q))
+
+                session.commit()
+
+            except (exc.SQLAlchemyError, StatementError, DBAPIError) as e:
+                self.log.error(f'Error executing SQL query: {e}', exc_info=True)
+                session.rollback()  # Rollback changes in case of an error
+
+        except Exception as e:
+            self.log.error(f'Error setting up database {self.service} connection: {e}', exc_info=True)
+
+        finally:
+            if (session is not None):
+                session.close()
+            if (tunnel is not None):
+                tunnel.stop()
+
 
     def insert_data_fake_regions(self, nr_recs: int):
 
@@ -145,7 +183,8 @@ class DatabaseFunctions:
                 country_ids = [row[0] for row in res.fetchall()]
 
                 # case countries table is empty
-
+                if len(country_ids) == 0:
+                    country_ids = None
 
                 # generate dataframe with fake data
                 data = DGen.gen_data_fake_locations(nr_recs, country_ids)
@@ -335,6 +374,9 @@ class DatabaseFunctions:
                 res = session.execute(text('select category_id from product_categories'))
                 category_ids = [row[0] for row in res.fetchall()]
 
+                if len(category_ids) == 0:
+                    category_ids = None
+
                 # generate dataframe with fake data
                 data = DGen.gen_data_fake_products(nr_recs, category_ids)
 
@@ -477,16 +519,27 @@ class DatabaseFunctions:
 
             try:
 
+
                 # select available customer ids
-                res = session.execute(text('SELECT customer_id FROM customers'))
-                customer_ids = [row[0] for row in res.fetchall()]
+                res_1 = session.execute(text('SELECT customer_id FROM customers'))
+                customer_ids = [row[0] for row in res_1.fetchall()]
 
-                print(customer_ids)
-                # select available
-                res = session.execute(text('SELECT employee_id FROM employees'))
-                salesman_ids = [row[0] for row in res.fetchall()]
+                # select available employees
+                res_2 = session.execute(text('SELECT employee_id FROM employees'))
+                salesman_ids = [row[0] for row in res_2.fetchall()]
 
-                print(salesman_ids)
+                # in case we have order_items, but we dont have any orders
+                res_3 = session.execute(text('SELECT MAX(order_id) FROM orders'))
+                max_order_id = res_3.scalar()
+                max_order_id = max_order_id if max_order_id is not None else 0
+
+                res_4 = session.execute(text('SELECT MAX(order_id) FROM order_items'))
+                temp = res_4.scalar()
+                temp = temp if temp is not None else 0
+
+                # in this case we see if we insert enough records and set nr_recs
+                if (max_order_id == 0) and temp > nr_recs:
+                    nr_recs = temp
 
                 if len(customer_ids) == 0:
                     customer_ids = None
@@ -499,6 +552,133 @@ class DatabaseFunctions:
 
                 # generate queries for insert
                 _queries = QGen.generate_insert_statement(data, 'orders')
+
+                for q in _queries:
+                    session.execute(text(q))
+
+                # commit the changes
+                session.commit()
+
+            except (exc.SQLAlchemyError, StatementError, DBAPIError) as e:
+                self.log.error(f'Error executing SQL query: {e}', exc_info=True)
+                session.rollback()  # Rollback changes in case of an error
+
+        except Exception as e:
+            self.log.error(f'Error setting up database {self.service} connection: {e}', exc_info=True)
+
+        finally:
+
+            if session is not None:
+                session.close()
+
+            if tunnel is not None:
+                tunnel.stop()
+
+    def insert_data_fake_order_items(self, nr_of_orders: int):
+
+        # Initialize tunnel and session to None
+        tunnel = None
+        session = None
+
+        try:
+            # create tunnel
+            tunnel = get_ssh_tunnel(service=self.service)
+            tunnel.start()
+            local_port = str(tunnel.local_bind_port)
+
+            # create session
+            session = create_session(db=self.service, local_port=local_port)
+
+            try:
+
+                # select all available orders ids
+                res_1 = session.execute(text('SELECT order_id FROM orders'))
+                all_orders_ids = [row[0] for row in res_1.fetchall()]
+
+                res_2 = session.execute(text('SELECT order_id FROM order_items'))
+                wr_orders_ids = [row[0] for row in res_2.fetchall()]
+
+                remaining_order_items = [item for item in all_orders_ids if item not in wr_orders_ids]
+
+
+                # select available products
+                res = session.execute(text('SELECT product_id FROM products'))
+                product_ids = [row[0] for row in res.fetchall()]
+
+                # if we have empty orders, products
+                if len(remaining_order_items) == 0:
+                    remaining_order_items = None
+
+                print(f'remain ord {remaining_order_items}')
+
+                if len(product_ids) == 0:
+                    product_ids = None
+
+                # generate dataframe with fake data
+                data = DGen.gen_data_fake_order_items(remaining_order_items, product_ids, nr_of_orders)
+
+                # generate queries for insert
+                _queries = QGen.generate_insert_statement(data, 'order_items')
+
+                for q in _queries:
+                    session.execute(text(q))
+
+                # commit the changes
+                session.commit()
+
+            except (exc.SQLAlchemyError, StatementError, DBAPIError) as e:
+                self.log.error(f'Error executing SQL query: {e}', exc_info=True)
+                session.rollback()  # Rollback changes in case of an error
+
+        except Exception as e:
+            self.log.error(f'Error setting up database {self.service} connection: {e}', exc_info=True)
+
+        finally:
+
+            if session is not None:
+                session.close()
+
+            if tunnel is not None:
+                tunnel.stop()
+
+
+    def insert_data_fake_inventories(self, nr_products: int):
+
+        # Initialize tunnel and session to None
+        tunnel = None
+        session = None
+
+        try:
+            # create tunnel
+            tunnel = get_ssh_tunnel(service=self.service)
+            tunnel.start()
+            local_port = str(tunnel.local_bind_port)
+
+            # create session
+            session = create_session(db=self.service, local_port=local_port)
+
+            try:
+
+                # select all available orders ids
+                res_1 = session.execute(text('SELECT product_id FROM products'))
+                product_ids = [row[0] for row in res_1.fetchall()]
+
+                res_2 = session.execute(text('SELECT warehouse_id FROM warehouses'))
+                warehouse_ids = [row[0] for row in res_2.fetchall()]
+
+                # if we have empty products, warehouses
+
+                if len(warehouse_ids) == 0:
+                    warehouse_ids = None
+
+                if len(product_ids) == 0:
+                    product_ids = None
+
+                # generate dataframe with fake data
+                data = DGen.gen_data_fake_inventories(product_ids, warehouse_ids, nr_products)
+
+                # generate queries for insert
+                _queries = QGen.generate_insert_statement(data, 'inventories')
 
                 for q in _queries:
                     print(q)
@@ -522,10 +702,7 @@ class DatabaseFunctions:
             if tunnel is not None:
                 tunnel.stop()
 
-
-
-    def insert_data_fake_order_items(self):
-
+    def delete_data_from_tables(self, table_names: list[str]):
         # Initialize tunnel and session to None
         tunnel = None
         session = None
@@ -541,76 +718,25 @@ class DatabaseFunctions:
 
             try:
 
-                # select all available orders ids
-                res = session.execute(text('SELECT order_id FROM orders'))
-                all_orders_ids = [row[0] for row in res.fetchall()]
-                print('All Orders: ')
-                print(all_orders_ids)
-
-                res = session.execute(text('SELECT order_id FROM order_items'))
-                wr_orders_ids = [row[0] for row in res.fetchall()]
-
-                remaining_order_items = [item for item in all_orders_ids if item not in wr_orders_ids]
-
-                print('remaing')
-                print(remaining_order_items)
-                # select available products
-                res = session.execute(text('SELECT product_id FROM products'))
-                product_ids = [row[0] for row in res.fetchall()]
-
-                # if we have empty orders, products
-                if len(remaining_order_items) == 0:
-                    remaining_order_items = None
-
-                if len(product_ids) == 0:
-                    product_ids = None
-
-
-                # generate dataframe with fake data
-                data = DGen.gen_data_fake_order_items(remaining_order_items, product_ids)
-
-                # generate queries for insert
-                _queries = QGen.generate_insert_statement(data, 'orders')
-
+                _queries = QGen.generate_delete_statements(table_names=table_names)
                 for q in _queries:
-                    print(q)
-                    #session.execute(text(q))
-
-                # commit the changes
-                #session.commit()
+                    session.execute(text(q))
+                session.commit()
 
             except (exc.SQLAlchemyError, StatementError, DBAPIError) as e:
                 self.log.error(f'Error executing SQL query: {e}', exc_info=True)
                 session.rollback()  # Rollback changes in case of an error
+            finally:
+                if session is not None and session.is_active:
+                    session.close()
 
         except Exception as e:
             self.log.error(f'Error setting up database {self.service} connection: {e}', exc_info=True)
 
         finally:
 
-            if session is not None:
-                session.close()
-
             if tunnel is not None:
                 tunnel.stop()
-
-
-
-if __name__ == '__main__':
-
-
-    obj = DatabaseFunctions(service='ORACLE')
-    #obj.insert_data_fake_countries(5)
-    #obj.insert_data_fake_locations(5)
-    #obj.insert_data_fake_warehouses(5)
-    #obj.insert_data_fake_employees(20)
-    #obj.insert_data_fake_product_categories(10)
-    #obj.insert_data_fake_products(10)
-    #obj.insert_data_fake_customers(10)
-    #obj.insert_data_fake_contacts(10)
-    #obj.insert_data_fake_orders(10)
-    obj.insert_data_fake_order_items()
-
 
 
 

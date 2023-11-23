@@ -67,7 +67,7 @@ def gen_data_fake_countries(nr_recs: int, regions_ids: list[int], country_ids: l
         # Add a new row to the DataFrame in each iteration
         df.loc[i] = {
             'country_id': country_code,
-            'country_name': country.name,
+            'country_name': country.name[:40],
             'region_id': region
         }
 
@@ -86,9 +86,15 @@ def gen_data_fake_locations(nr_recs: int, country_ids: list[str]):
         'country_id'
     ])
 
-    # generate some countries
+    # generate some countries case no data
     if country_ids is None:
-        country_ids = [x for x in range(config.MAX)]
+        country_ids = []
+        for x in range(1, config.MAX):
+            country = fake.random_element(elements=pycountry.countries)
+            country_code = country.alpha_2
+            country_ids.append(country_code)
+
+    print(f'countries {country_ids}')
 
     for i in range(1, nr_recs):
         # Add a new row to the DataFrame in each iteration
@@ -116,8 +122,8 @@ def gen_data_fake_warehouses(nr_recs: int,  location_ids: list[int]):
         location_ids = [x for x in range(config.MAX)]
 
     for i in range(1, nr_recs):
-        # Add a new row to the DataFrame in each iteration
 
+        # Add a new row to the DataFrame in each iteration
         df.loc[i] = [
             fake.company(),
             fake.random_element(elements=location_ids)
@@ -129,7 +135,6 @@ def gen_data_fake_warehouses(nr_recs: int,  location_ids: list[int]):
 def gen_data_fake_employees(nr_recs: int, db: str):
 
     fake = Faker()
-
     df = pd.DataFrame(columns=[
 
         'first_name',
@@ -148,7 +153,8 @@ def gen_data_fake_employees(nr_recs: int, db: str):
             # Convert the datetime.date to a string with the desired format
             hire_date = fake_date.strftime("%d-%b-%y").upper()
         else:
-            hire_date = fake.date_this_decade()
+            fake_date = fake.date_this_decade()
+            hire_date = fake_date.strftime("%Y-%m-%d")
 
         df.loc[i] = [
             fake.first_name(),
@@ -157,13 +163,14 @@ def gen_data_fake_employees(nr_recs: int, db: str):
             fake.phone_number(),
             hire_date, # hire_date
             fake.random_int(min=1, max=config.MAX), # manager_id
-            fake.job()
+            fake.job().replace("'", " ")
         ]
 
     return df
 
 
 def gen_data_fake_product_categories(nr_recs: int):
+
     fake = Faker()
 
     df = pd.DataFrame(columns=['category_name'])
@@ -225,7 +232,6 @@ def gen_data_fake_customers(nr_recs: int):
 
     return df
 
-
 def gen_data_fake_contacts(nr_recs: int, customer_ids: list[int]):
     fake = Faker()
 
@@ -269,7 +275,7 @@ def gen_data_fake_orders(nr_recs: int, customer_ids: list[int], salesman_ids: li
     if salesman_ids is None:
         salesman_ids = [x for x in range(config.MAX)]
 
-    for i in range(1, nr_recs):
+    for i in range(0, nr_recs):
 
         # Generate a random date within the past 3 years
         fake_date_this_year = fake.date_this_year()
@@ -279,6 +285,9 @@ def gen_data_fake_orders(nr_recs: int, customer_ids: list[int], salesman_ids: li
         if db == 'ORACLE':
             # Convert the datetime.date to a string with the desired format
             order_date = order_date.strftime("%d-%b-%y").upper()
+
+        elif db == 'POSTGRE':
+            order_date = order_date.strftime("%Y-%m-%d")
 
         df.loc[i] = [
             fake.random_element(elements=customer_ids),  # customer_id
@@ -291,7 +300,7 @@ def gen_data_fake_orders(nr_recs: int, customer_ids: list[int], salesman_ids: li
     return df
 
 
-def gen_data_fake_order_items( order_items: list[int], products_ids: list[int]):
+def gen_data_fake_order_items( order_ids : list[int], products_ids: list[int], nr_of_orders: int):
 
     fake = Faker()
     columns = [
@@ -303,21 +312,15 @@ def gen_data_fake_order_items( order_items: list[int], products_ids: list[int]):
     ]
     rows = []
 
-    df = pd.DataFrame(columns=columns)
-
-    if order_items is None:
-        order_items = [x for x in range(1, config.MAX)]
-
-    print( f'od : {order_items}')
+    if order_ids is None or nr_of_orders > len(order_ids):
+        order_ids = [x for x in range(1, nr_of_orders)]
 
     if products_ids is None:
         products_ids = [x for x in range(1, config.MAX)]
 
-    print(f'prods : {order_items}')
+    for i in order_ids:
 
-    for i in order_items:
-
-        nr_of_items = fake.random_int(min=1, max=5)
+        nr_of_items = fake.random_int(min=1, max=10)
 
         for j in range(1, nr_of_items, 1):
 
@@ -337,14 +340,44 @@ def gen_data_fake_order_items( order_items: list[int], products_ids: list[int]):
     return df
 
 
-if __name__ == '__main__':
+def gen_data_fake_inventories(product_ids: list[int], warehouse_ids: list[int], nr_products: int ):
 
-    print('everything will be fine')
-    # Create a Faker instance
     fake = Faker()
+    columns = [
+        'product_id',
+        'warehouse_id',
+        'quantity'
+    ]
+    rows = []
 
-    # Generate a random date within the past 3 years
-    fake_date_this_year = fake.date_this_year()
-    n = fake.random_int(min=0, max=2)
-    fake_date_last_3_years = fake_date_this_year - timedelta(days=365*n)
+    if product_ids is None or nr_products > len(product_ids):
+        product_ids = [x for x in range(1, nr_products)]
+
+    if warehouse_ids is None:
+        warehouse_ids = [x for x in range(1, config.MAX)]
+
+    for i in product_ids:
+
+        generated_warehouses_per_prod = set()
+        nr_of_warehouse_per_prod = fake.random_int(min=1, max=config.MAX)
+
+        for j in range(1, nr_of_warehouse_per_prod):
+
+            warehouse = fake.random_element(elements=warehouse_ids)
+
+            while warehouse in generated_warehouses_per_prod:
+                warehouse = fake.random_element(elements=warehouse_ids)
+
+            row_values = [
+                i,      # prod_id
+                warehouse,
+                fake.random_int(min=1, max=100)
+            ]
+            generated_warehouses_per_prod.add(warehouse)
+
+            rows.append(row_values)
+
+    df = pd.DataFrame(rows, columns=columns)
+
+    return df
 

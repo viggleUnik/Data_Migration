@@ -1,15 +1,18 @@
 # Helper functions for file operations
 from configparser import ConfigParser
 import os
+from scripts.init_config import config
+import logging
 
 
-config_file_path = 'C:\\Users\\crvicol\\WorkAndStudy\\Python_Workspace\\epic_8\\config\\config.ini'
+def read_config(section : str):
 
-def read_config(section : str, filename=config_file_path):
+    config_file_path = os.path.join(config.DIR_CONFIG, 'config.ini')
+
     # create a parser
     parser = ConfigParser()
     # read config file
-    parser.read(filename)
+    parser.read(config_file_path)
 
      # get section 
     section_params = {}
@@ -21,5 +24,20 @@ def read_config(section : str, filename=config_file_path):
         raise Exception('Section {0} not found in the {1} file'.format(section, filename))
 
     return section_params
+
+
+def save_dataframe_to_csv(dataframe):
+
+    log = logging.getLogger(os.path.basename(__file__))
+    csv_file_name = f'{dataframe.columns[1]}.csv'
+    # Construct the full path to the CSV file
+    csv_path = os.path.join(config.DIR_CSV, csv_file_name)
+    # Save the DataFrame to the CSV file
+    dataframe.to_csv(csv_path, index=False)
+    log.info(f"DataFrame saved to {csv_path}")
+
+
+
+
 
 
