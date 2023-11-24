@@ -21,7 +21,7 @@ def read_config(section : str):
         for param in params:
             section_params[param[0].upper()] = param[1]
     else:
-        raise Exception('Section {0} not found in the {1} file'.format(section, filename))
+        raise Exception('Section {0} not found in the {1} file'.format(section, config_file_path))
 
     return section_params
 
