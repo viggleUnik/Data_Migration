@@ -1,6 +1,7 @@
 import boto3
 import logging
 import os
+import io
 
 from scripts.utils.file_utils import read_config
 from botocore.exceptions import NoCredentialsError
@@ -62,14 +63,18 @@ class S3DataUtils:
 
             file_key = f'student4/migrationData/{table_name}.csv'
 
+            # Download locally
             s3_client, bucket_name = S3DataUtils.get_s3_client()
             s3_client.download_file(bucket_name, file_key , os.path.join(config.DIR_S3_DOWNLOAD, f'{table_name}.csv'))
 
-            #### here need to read file to pandas dataframe and return
+            # From obj to dataframe
             response = s3_client.get_object(Bucket=bucket_name, Key=file_key)
             csv_data = response['Body'].read().decode('utf-8')
 
-            df = pd.read_csv(response['Body'])
+                # Convert the CSV data string into a file-like object
+            csv_file = io.StringIO(csv_data)
+
+            df = pd.read_csv(csv_file, sep='|')
 
         except NoCredentialsError as nc:
             log.info(f"Credentials not available or incorrect {nc}.")
@@ -130,5 +135,7 @@ class S3DataUtils:
         except Exception as e:
             log.error(f"Error: {e}")
             return False
+
+
 
 

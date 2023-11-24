@@ -7,11 +7,12 @@ from datetime import datetime, timedelta
 
 from scripts.init_config import config
 
-
 from scripts.init_config import config
 
-config.setup_logging(logs='info')
+
+#config.setup_logging(logs='info')
 log = logging.getLogger(os.path.basename(__file__))
+
 
 def gen_data_fake_regions(nr_recs: int, id_start: int = 1 ):
 
@@ -64,10 +65,11 @@ def gen_data_fake_countries(nr_recs: int, regions_ids: list[int], country_ids: l
         # Add the country code to the set
         generated_country_codes.add(country_code)
 
+        c_name = country.name[:40]
         # Add a new row to the DataFrame in each iteration
         df.loc[i] = {
             'country_id': country_code,
-            'country_name': country.name[:40],
+            'country_name': c_name.replace("'", " ") ,
             'region_id': region
         }
 
