@@ -2,6 +2,7 @@ import boto3
 import logging
 import os
 
+
 from scripts.utils.s3_data_utils import S3DataUtils as S3Ut
 from scripts.utils.file_utils import read_config
 from botocore.exceptions import NoCredentialsError
@@ -115,5 +116,7 @@ if __name__ == '__main__':
 
     #S3Ut.list_objects_in_folder('student4/migrationData/')
 
-    S3Ut.download_from_s3_to_dataframe('order_items')
+
+
+
 

@@ -22,6 +22,15 @@ class DatabaseFunctions:
 
     def control_constraints(self, control: str):
 
+        """
+
+        :param control:
+
+        Control of constraints for Database based on a param that can take values:
+            ENABLE - activate/add constraints
+            DISABLE - deactivate/drop constraints
+
+        """
         tunnel = None
         session = None
 
@@ -45,7 +54,7 @@ class DatabaseFunctions:
                     _queries = QGen.generate_disable_constraints(service=self.service)
 
                 for q in _queries:
-                    print(q)
+
                     session.execute(text(q))
 
                 session.commit()
@@ -65,7 +74,13 @@ class DatabaseFunctions:
 
 
     def insert_data_fake_regions(self, nr_recs: int):
+        """
 
+        :param nr_recs:
+
+        Insert fake data into 'regions' table
+
+        """
         # Initialize tunnel and session to None
         tunnel = None
         session = None
@@ -83,14 +98,17 @@ class DatabaseFunctions:
                 # generate dataframe with fake data
                 data = DGen.gen_data_fake_regions(nr_recs)
 
+                table_name = 'regions'
                 # generate queries for insert
-                _queries = QGen.generate_insert_statement(data, 'regions')
+                _queries = QGen.generate_insert_statement(data, table_name)
 
                 for q in _queries:
                     session.execute(text(q))
 
                 # commit the changes
                 session.commit()
+
+                self.log.info(f'Inserted DATA into {table_name} SUCCESSFULLY!')
 
             except (exc.SQLAlchemyError, StatementError, DBAPIError) as e:
                 self.log.error(f'Error executing SQL query: {e}', exc_info=True)
@@ -106,7 +124,16 @@ class DatabaseFunctions:
                 tunnel.stop()
 
     def insert_data_fake_countries(self, nr_recs: int):
+        """
 
+        :param nr_recs:
+
+        Can insert fake records up to 250 in table 'countries' that's the limit of
+        a used library 'pycountry'
+
+        If we have data in regions, we will insert to countries based on these region_ids
+
+        """
         # Initialize tunnel and session to None
         tunnel = None
         session = None
@@ -149,6 +176,8 @@ class DatabaseFunctions:
                 # commit the changes
                 session.commit()
 
+                self.log.info(f'Inserted DATA into countries SUCCESSFULLY!')
+
             except (exc.SQLAlchemyError, StatementError, DBAPIError) as e:
                 self.log.error(f'Error executing SQL query: {e}', exc_info=True)
                 session.rollback()  # Rollback changes in case of an error
@@ -163,6 +192,17 @@ class DatabaseFunctions:
                 tunnel.stop()
 
     def insert_data_fake_locations(self, nr_recs: int):
+
+        """
+
+        :param nr_recs:
+
+         Insert fake data into 'locations' table, based on param
+
+         If we have data in countries, we will insert to locations, column:
+            country_id -- fk -- based on existing country_id's
+
+        """
 
         # Initialize tunnel and session to None
         tunnel = None
@@ -198,6 +238,8 @@ class DatabaseFunctions:
                 # commit the changes
                 session.commit()
 
+                self.log.info(f'Inserted DATA into locations SUCCESSFULLY!')
+
             except (exc.SQLAlchemyError, StatementError, DBAPIError) as e:
                 self.log.error(f'Error executing SQL query: {e}', exc_info=True)
                 session.rollback()  # Rollback changes in case of an error
@@ -212,6 +254,18 @@ class DatabaseFunctions:
                 tunnel.stop()
 
     def insert_data_fake_warehouses(self, nr_recs: int):
+
+        """
+
+        :param nr_recs:
+
+        Insert fake data into 'warehouses' table, based on param
+
+        If we have data in locations, we will insert to warehouses, column:
+            location_id -- fk -- based on existing country_id's
+
+        """
+
 
         # Initialize tunnel and session to None
         tunnel = None
@@ -242,11 +296,13 @@ class DatabaseFunctions:
                 _queries = QGen.generate_insert_statement(data, 'warehouses')
 
                 for q in _queries:
-                    print(q)
+
                     session.execute(text(q))
 
                 # commit the changes
                 session.commit()
+
+                self.log.info(f'Inserted DATA into warehouses SUCCESSFULLY!')
 
             except (exc.SQLAlchemyError, StatementError, DBAPIError) as e:
                 self.log.error(f'Error executing SQL query: {e}', exc_info=True)
@@ -287,11 +343,13 @@ class DatabaseFunctions:
                 _queries = QGen.generate_insert_statement(data, 'employees')
 
                 for q in _queries:
-                    print(q)
+
                     session.execute(text(q))
 
                 # commit the changes
                 session.commit()
+
+                self.log.info(f'Inserted DATA into employees SUCCESSFULLY!')
 
             except (exc.SQLAlchemyError, StatementError, DBAPIError) as e:
                 self.log.error(f'Error executing SQL query: {e}', exc_info=True)
@@ -332,11 +390,12 @@ class DatabaseFunctions:
                 _queries = QGen.generate_insert_statement(data, 'product_categories')
 
                 for q in _queries:
-                    print(q)
                     session.execute(text(q))
 
                 # commit the changes
                 session.commit()
+
+                self.log.info(f'Inserted DATA into product_categories SUCCESSFULLY!')
 
             except (exc.SQLAlchemyError, StatementError, DBAPIError) as e:
                 self.log.error(f'Error executing SQL query: {e}', exc_info=True)
@@ -389,6 +448,8 @@ class DatabaseFunctions:
                 # commit the changes
                 session.commit()
 
+                self.log.info(f'Inserted DATA into products SUCCESSFULLY!')
+
             except (exc.SQLAlchemyError, StatementError, DBAPIError) as e:
                 self.log.error(f'Error executing SQL query: {e}', exc_info=True)
                 session.rollback()  # Rollback changes in case of an error
@@ -428,11 +489,12 @@ class DatabaseFunctions:
                 _queries = QGen.generate_insert_statement(data, 'customers')
 
                 for q in _queries:
-                    print(q)
                     session.execute(text(q))
 
                 # commit the changes
                 session.commit()
+
+                self.log.info(f'Inserted DATA into customers SUCCESSFULLY!')
 
             except (exc.SQLAlchemyError, StatementError, DBAPIError) as e:
                 self.log.error(f'Error executing SQL query: {e}', exc_info=True)
@@ -480,11 +542,12 @@ class DatabaseFunctions:
                 _queries = QGen.generate_insert_statement(data, 'contacts')
 
                 for q in _queries:
-                    print(q)
                     session.execute(text(q))
 
                 # commit the changes
                 session.commit()
+
+                self.log.info(f'Inserted DATA into contacts SUCCESSFULLY!')
 
             except (exc.SQLAlchemyError, StatementError, DBAPIError) as e:
                 self.log.error(f'Error executing SQL query: {e}', exc_info=True)
@@ -559,6 +622,9 @@ class DatabaseFunctions:
                 # commit the changes
                 session.commit()
 
+                self.log.info(f'Inserted DATA into orders SUCCESSFULLY!')
+
+
             except (exc.SQLAlchemyError, StatementError, DBAPIError) as e:
                 self.log.error(f'Error executing SQL query: {e}', exc_info=True)
                 session.rollback()  # Rollback changes in case of an error
@@ -626,6 +692,8 @@ class DatabaseFunctions:
                 # commit the changes
                 session.commit()
 
+                self.log.info(f'Inserted DATA into order_items SUCCESSFULLY!')
+
             except (exc.SQLAlchemyError, StatementError, DBAPIError) as e:
                 self.log.error(f'Error executing SQL query: {e}', exc_info=True)
                 session.rollback()  # Rollback changes in case of an error
@@ -681,11 +749,12 @@ class DatabaseFunctions:
                 _queries = QGen.generate_insert_statement(data, 'inventories')
 
                 for q in _queries:
-                    print(q)
                     session.execute(text(q))
 
                 # commit the changes
                 session.commit()
+
+                self.log.info(f'Inserted DATA into inventories SUCCESSFULLY!')
 
             except (exc.SQLAlchemyError, StatementError, DBAPIError) as e:
                 self.log.error(f'Error executing SQL query: {e}', exc_info=True)
@@ -703,6 +772,13 @@ class DatabaseFunctions:
                 tunnel.stop()
 
     def delete_data_from_tables(self, table_names: list[str]):
+        """
+
+        :param table_names:
+
+        Based on a list of tables, truncate all data from them
+
+        """
         # Initialize tunnel and session to None
         tunnel = None
         session = None
@@ -718,9 +794,57 @@ class DatabaseFunctions:
 
             try:
 
-                _queries = QGen.generate_delete_statements(table_names=table_names)
-                for q in _queries:
+                _delete_queries = QGen.generate_delete_statements(table_names=table_names)
+                for q in _delete_queries:
                     session.execute(text(q))
+                session.commit()
+
+            except (exc.SQLAlchemyError, StatementError, DBAPIError) as e:
+                self.log.error(f'Error executing SQL query: {e}', exc_info=True)
+                session.rollback()  # Rollback changes in case of an error
+            finally:
+                if session is not None and session.is_active:
+                    session.close()
+
+        except Exception as e:
+            self.log.error(f'Error setting up database {self.service} connection: {e}', exc_info=True)
+
+        finally:
+
+            if tunnel is not None:
+                tunnel.stop()
+
+
+    def update_record_in_table(self, table_name, set_column, set_value, condition_column, condition_value):
+        """
+        To update a Record In Table based on params
+
+        :param table_name:
+        :param set_column:
+        :param set_value:
+        :param condition_column:
+        :param condition_value:
+
+        """
+        # Initialize tunnel and session to None
+        tunnel = None
+        session = None
+
+        try:
+            # create tunnel
+            tunnel = get_ssh_tunnel(service=self.service)
+            tunnel.start()
+            local_port = str(tunnel.local_bind_port)
+
+            # create session
+            session = create_session(db=self.service, local_port=local_port)
+
+            try:
+
+                _update_query = QGen.generate_update_statement(table_name, set_column, set_value, condition_column, condition_value)
+
+                session.execute(text(_update_query))
+
                 session.commit()
 
             except (exc.SQLAlchemyError, StatementError, DBAPIError) as e:

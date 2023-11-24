@@ -24,7 +24,8 @@ class config:
     DIR_CONFIG = None
     DIR_OUTPUT = None
     DIR_CSV = None
-    DIR_LOGS = 'c:\\Users\\crvicol\\WorkAndStudy\\Python_Workspace\\epic_8\\output\\logs'
+    #DIR_LOGS = 'c:\\Users\\crvicol\\WorkAndStudy\\Python_Workspace\\epic_8\\output\\logs'
+    DIR_LOGS = None
     DIR_SQLS = None
     DIR_S3_DOWNLOAD = None
 
@@ -111,6 +112,7 @@ class config:
         loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
         for logger in loggers:
             logger.setLevel(loglevels_dict.get(config.LOGS_LEVEL.lower(), logging.INFO))
+
 
 
         # Create a handler with the custom filter for 'sqlalchemy.engine'

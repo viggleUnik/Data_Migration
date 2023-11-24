@@ -2,6 +2,7 @@
 class QueryGenerator:
 
     ORACLE_CONTRAINTS = [
+
         ("countries", "fk_countries_regions"),
         ("locations", "fk_locations_countries"),
         ("warehouses", "fk_warehouses_locations"),
@@ -14,6 +15,7 @@ class QueryGenerator:
         ("order_items", "fk_order_items_orders"),
         ("inventories", "fk_inventories_products"),
         ("inventories", "fk_inventories_warehouses"),
+
     ]
 
     POSTGRE_CONTRAINTS = [
@@ -29,7 +31,6 @@ class QueryGenerator:
         ("products", "fk_products_categories", "category_id", "product_categories", "category_id"),
         ("warehouses", "fk_warehouses_locations", "location_id", "locations", "location_id")
     ]
-
 
     @staticmethod
     def generate_insert_statement(input_data, table_name):
@@ -55,12 +56,10 @@ class QueryGenerator:
 
         query_list = []
 
-
-        # check type and generate strings for querry
+        # check type and generate strings for query
         for table in table_names:
             query = f"TRUNCATE TABLE {table}"
             query_list.append(query)
-
 
         return query_list
 
@@ -141,8 +140,6 @@ def generate_reset_identities(service: str, table_names: list[str]):
 
 if __name__ == '__main__':
 
-
     tables = []
-
     generate_reset_identities()
 
