@@ -3,6 +3,8 @@ import os
 from re import S
 import faker
 
+
+from scripts.utils.query_generator import QueryGenerator
 import logging
 from scripts.init_config import config
 from scripts.utils.file_utils import read_config
@@ -10,9 +12,6 @@ from scripts.datagen.database_functions import DatabaseFunctions
 from scripts.utils.file_utils import save_dataframe_to_csv
 from scripts.utils.database_utils import execute_sql_file_to_df, get_oracle_table_data_to_csv, load_data_file_s3_to_postgres_db
 from scripts.utils.s3_data_utils import S3DataUtils
-def run():
-    config.setup(logs_level='debug')
-
 
 
 def main_data_generation_run(service: str):
@@ -62,43 +61,40 @@ def from_sql_to_csv_saved(service: str, order_date: str):
     df = execute_sql_file_to_df(service, sql_file_path, order_date)
     save_dataframe_to_csv(df)
 
-
-
-
-if __name__ == '__main__':
-
-    # set directories
-    #config.setup_dirs()
+def _run():
+    # set directories and log file
     config.setup(logs_level='info')
 
     # delete and generate
-    #main_delete_data_from_db(service='ORACLE')
-    #main_delete_data_from_db(service='POSTGRE')
+    main_delete_data_from_db(service='ORACLE')
+    main_delete_data_from_db(service='POSTGRE')
 
-    #main_data_generation+_run(service='ORACLE')
+    main_data_generation_run(service='ORACLE')
 
     # big_sql_join task
-    #from_sql_to_csv_saved('POSTGRE', '2021-08-09')
-
+    from_sql_to_csv_saved('POSTGRE', '2021-08-09')
 
     # save localy oracle data to csv
 
-    #for t in table_names:
-    #get_oracle_table_data_to_csv(table_name=t)
+    for t in table_names:
+        get_oracle_table_data_to_csv(table_name=t)
 
-    # list before
-    #S3DataUtils.list_objects_in_folder('student4/migrationData/')
+    # list objects in bucket before
+    S3DataUtils.list_objects_in_folder('student4/migrationData/')
 
     # upload all csv files to s3
-    #S3DataUtils.upload_to_s3()
+    S3DataUtils.upload_to_s3()
 
-    # list after
-    #S3DataUtils.list_objects_in_folder('student4/migrationData/')
+    # list objects after
+    S3DataUtils.list_objects_in_folder('student4/migrationData/')
 
     # load csv file from s3 bucket to postgres
 
-    #load_data_file_s3_to_postgres_db('inventories')
+    load_data_file_s3_to_postgres_db('inventories')
 
+
+if __name__ == '__main__':
+    _run()
 
 
 
