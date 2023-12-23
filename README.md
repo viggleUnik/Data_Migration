@@ -4,41 +4,9 @@ Project Epic#5: Creating Python Data Migration project
 -----------------
 Task 1) To define a working space using VSCode to interact with your data from both Oracle and PostgreSQL.
 
-* Create a well-organized folder structure for your data engineering project in VSCode based on below template.
+* Create a well-organized folder structure for your data engineering project.
 * Consider using a version control (e.g., Git, GitHub) to track changes in your project and collaborate with others.
 
-data-migration-project/
-│
-├── config/
-│   ├── config.ini               # Configuration file for login credentials
-│
-├── scripts/
-│   ├── datagen/                 # Data generator scripts
-│   │   ├── postgres_data.py     # Generator script for PostgreSQL
-│   │   ├── oracle_data.py       # Generator script for Oracle
-│   │
-│   ├── checks/                  # Check scripts
-│   │   ├── migration_check.py   # Check script for Oracle to Postgres migration
-│   │
-│   ├── sqls/                    # SQL scripts
-│   │   ├── big_sql_join.sql     # A query to return data from joins of: CUSTOMERS,ORDERS, ORDER_ITEMS, PRODUCTS and PRODUCT_CATEGORIES
-│   │
-│   ├── utils/                   # Utility scripts
-│   │   ├── database_utils.py    # Helper functions for database connections
-│   │   ├── file_utils.py        # Helper functions for file operations
-│   │
-│   └── main.py                  # Main script to run your project processes
-│
-├── output/
-│   ├── csv/                     # CSV output files
-│   │   ├── postgres_stat.csv    # CSV file for PostgreSQL DB model statistical data
-│   │   ├── oracle_stat.csv      # CSV file for Oracle DB model statistical data
-│   │
-│   ├── logs/                    # Log files for your data processes
-│
-├── requirements.txt             # List of project dependencies
-│
-└── README.md                    # Project documentation
 
 -----------------
 Task 2) To develop database connectivity and file utility scripts
