@@ -28,3 +28,9 @@ Task 4) To develop data exportation to local csv file utility function
 * Define the query script in /sqls/big_sql_join.sql to return the set of customers and the products bought for a particular ORDER_DATE. 
 * Define a function in /utils/database_utils.py to return a pandas dataframe from a given database based on the /sqls/big_sql_join.sql script return.
 * Define one function in /scripts/utils/file_utils.py to save the pandas dataframe to a specific local path.
+
+
+-----------------
+Task 5) To develop data exportation to AWS S3 csv file utility function
+* From Oracle to AWS S3
+* Upload csv data files from AWS S3 to Postgres
