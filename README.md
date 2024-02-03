@@ -34,3 +34,4 @@ Task 4) To develop data exportation to local csv file utility function
 Task 5) To develop data exportation to AWS S3 csv file utility function
 * From Oracle to AWS S3
 * Upload csv data files from AWS S3 to Postgres
+* Read data from csv files and check if data is the same with pandas dataframe
